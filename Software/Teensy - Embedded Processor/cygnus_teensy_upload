@@ -1,0 +1,18 @@
+#!/bin/zsh
+
+# Script que carga codigo remotamente al teensy de Cygnus.
+# $1 es el nombre del hexfile.
+# $2 es opcionalmente la direccion ip de Cygnus.
+# Example:  cygnus_teensy_upload firmware.hex
+
+if [ $# -eq 1 ]; then
+    scp $1 alarm@cygnus:~/temp/firmware.hex
+    ssh alarm@cygnus "/usr/local/bin/teensy_loader_cli --mcu=mk20dx256 -sv ~/temp/firmware.hex"
+    ssh alarm@cygnus "rm ~/temp/firmware.hex"
+fi
+
+if [ $# -eq 2 ]; then
+    scp $1 alarm@$2:~/temp/firmware.hex
+    ssh alarm@$2 "/usr/local/bin/teensy_loader_cli --mcu=mk20dx256 -sv ~/temp/firmware.hex"
+    ssh alarm@$2 "rm ~/temp/firmware.hex"
+fi

@@ -1,0 +1,63 @@
+<launch>
+  <!-- |||Parametros||| -->
+  <!-- Hokuyo -->
+  <param name="calibrate_time" type="bool" value="true"/>
+  <!-- Robot State Publisher -->
+  <param name="robot_description" textfile="$(find reconstruccion_3d)/urdf/amigobot_brazolinx.urdf"/>
+  <param name="publish_frequency" type="double" value="50"/>
+  <param name="use_tf_static" type="bool" value="true"/>
+  <!-- Rqt Graph -->
+  <param name="enable_statistics" type="bool" value="true"/>
+
+  <!-- |||Nodos||| -->
+
+  <!-- Para conectar la aplicacion android sin necesidad de acciones -->
+  <node name="android_action_relay" pkg="reconstruccion_3d" type="android_action_relay" output="log"/>
+  <!-- Para conectar el hokuyo a los nodos apropiados -->
+  <node name="laser_switch" pkg="reconstruccion_3d" type="laser_switch" output="log"/>
+  <!-- Cargar Rviz -->
+  <node name="modelvisualisation" pkg="rviz" type="rviz" output="log"
+    args="-d /home/manuel/catkin_ws_overlay/src/reconstruccion_3d/configuration_files/completo.rviz">
+  </node>
+
+  <!-- |||Opcionales||| -->
+  <!-- Para grabar la sesion de ROS -->
+  <node if="$(arg rosbag)" pkg="rosbag" type="record" name="rosbag_record" args="-o $(find reconstruccion_3d)/bags/Grabacion /tf /tf_static /slam_out /cloud_in"/>
+  <!-- Para graficar los nodos -->
+  <node if="$(arg graph)" name="rqt_graph" pkg="rqt_graph" type="rqt_graph" output="log"/>
+
+  <!-- AmigoBot -->
+  <node if="$(arg amigobot)" name="RosAria" pkg="rosaria" type="RosAria" args="_port:=192.168.43.3:10001 _tf_prefix:='/descartar'" output="log">
+    <remap from="/RosAria/cmd_vel" to="/virtual_joystick/cmd_vel" />
+  </node>
+
+  <!-- Lanzar nodos de la Rpi -->
+	<group if="$(arg usar_rpi)">
+		<machine name="rpi" timeout="45" address="192.168.43.45" env-loader="/home/pi/catkin_ws/src/reconstruccion_3d/launch/env-loader_remoto.sh" user="pi"/>
+		<node machine="rpi" name="pan_tilt" pkg="reconstruccion_3d" type="pan_tilt" output="screen"/>
+    <node machine="rpi" name="action_3d_server" pkg="reconstruccion_3d" type="action_3d_server" output="screen"/>
+    <node machine="rpi" name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="log"/>
+    <node machine="rpi" name="urg_node" pkg="urg_node" type="urg_node" output="screen">
+      <remap from="scan" to="hokuyo_in" />
+    </node>
+	</group>
+
+  <!-- Para el octomap -->
+  <node if="$(arg octo)" type="octomap_server_node" pkg="octomap_server" name="octomap_server_node">
+    <param name="frame_id" type="string" value="map" />
+    <param name="resolution" type="double" value="0.03" />
+  </node>
+
+  <!-- Usar SLAM -->
+	<node if="$(arg slam)" name="cartographer_node" pkg="cartographer_ros" type="cartographer_node" output="screen"
+    args="-configuration_directory $(find reconstruccion_3d)/configuration_files
+	        -configuration_basename backpack_2d.lua">
+    <remap from="scan" to="slam_out" />
+	</node>
+
+  <!-- DEBUG -->
+  <!-- Para leer y escribir mensajes manualmente -->
+  <node if="$(arg debug)" name="rqt_gui" pkg="rqt_gui" type="rqt_gui"/>
+  <!-- Para probar las acciones -->
+  <node if="$(arg debug)" name="axclient" pkg="actionlib" type="axclient.py" output="screen" args="/construccion_3d"/>
+</launch>

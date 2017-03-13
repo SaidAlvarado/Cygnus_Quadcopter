@@ -1,0 +1,9 @@
+[Unit]
+Description=Start ROS
+After=multi-user.target
+
+[Service]
+ExecStart=/usr/local/bin/cygnus_ros_launch.sh
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,2 @@
+#!/usr/bin/env sh
+zsh -c "source /home/alarm/catkin_ws/devel/setup.zsh && roslaunch /home/alarm/catkin_ws/src/arduino_dynamic_reconfigure_proxy/launch/cygnus.launch"
